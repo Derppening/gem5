@@ -1709,4 +1709,13 @@ let {{
             }
             cfofBits = cfofBits & ~(X86ISA::OFBit | X86ISA::CFBit);
         '''
+
+    class Wrbrhint(RegOp):
+        op_class = 'InstPrefetchOp'
+        operand_types = (FoldedSrc1Op, Imm64Op,)
+
+        code = '''
+            uint32_t brhint_data = imm64 & mask(dataSize * 8);
+            (void) brhint_data;
+        '''
 }};

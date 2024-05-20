@@ -91,6 +91,11 @@ def macroop CLWB_P
     clwb seg, riprel, disp, dataSize=1
 };
 
+def macroop BRHINT_I
+{
+    rdip t1
+    wrbrhint t1, imm
+};
 """
 
 # let {{

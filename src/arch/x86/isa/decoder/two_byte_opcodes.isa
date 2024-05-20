@@ -260,7 +260,7 @@
                     0x5: UNPCKHPD(Vo,Wo);
                     0x6: MOVHPD(Vq,Mq);
                     0x7: MOVHPD(Mq,Vq);
-            }
+                }
                 // repne (0xF2)
                 0x8: decode OPCODE_OP_BOTTOM3 {
                     0x0: MOVSD(Vq,Wq);
@@ -644,15 +644,21 @@
                 }
                 default: UD2();
             }
-            0x10: decode OPCODE_OP_BOTTOM3 {
-                0x0: JO(Jz);
-                0x1: JNO(Jz);
-                0x2: JB(Jz);
-                0x3: JNB(Jz);
-                0x4: JZ(Jz);
-                0x5: JNZ(Jz);
-                0x6: JBE(Jz);
-                0x7: JNBE(Jz);
+            0x10: decode LEGACY_SEG {
+                // no prefix
+                0x0: decode OPCODE_OP_BOTTOM3 {
+                    0x0: JO(Jz);
+                    0x1: JNO(Jz);
+                    0x2: JB(Jz);
+                    0x3: JNB(Jz);
+                    0x4: JZ(Jz);
+                    0x5: JNZ(Jz);
+                    0x6: JBE(Jz);
+                    0x7: JNBE(Jz);
+                }
+                // cs/ds segment prefix - doubles as branch hint prefix
+                0x2: BRHINT(Jz);
+                0x3: BRHINT(Jz);
             }
             0x11: decode OPCODE_OP_BOTTOM3 {
                 0x0: JS(Jz);

@@ -199,6 +199,11 @@ class BaseSimpleCPU : public BaseCPU
      */
     virtual Fault initiateMemMgmtCmd(Request::Flags flags) = 0;
 
+    branch_prediction::BPredUnit *
+    getBPredUnit() override
+    {
+        return branchPred;
+    }
 };
 
 } // namespace gem5

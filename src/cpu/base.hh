@@ -67,6 +67,11 @@ struct BaseCPUParams;
 class CheckerCPU;
 class ThreadContext;
 
+namespace branch_prediction
+{
+class BPredUnit;
+} // namespace branch_prediction
+
 struct AddressMonitor
 {
     AddressMonitor();
@@ -819,6 +824,12 @@ class BaseCPU : public ClockedObject
     std::vector<std::unique_ptr<FetchCPUStats>> fetchStats;
     std::vector<std::unique_ptr<ExecuteCPUStats>> executeStats;
     std::vector<std::unique_ptr<CommitCPUStats>> commitStats;
+
+  public:
+    virtual branch_prediction::BPredUnit *
+    getBPredUnit() {
+        return nullptr;
+    }
 };
 
 } // namespace gem5

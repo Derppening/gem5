@@ -178,6 +178,12 @@ class SimpleExecContext : public ExecContext
         lastDcacheStall(0), execContextStats(cpu, thread)
     { }
 
+    BaseCPU &
+    getCPU() override
+    {
+        return *cpu;
+    }
+
     RegVal
     getRegOperand(const StaticInst *si, int idx) override
     {

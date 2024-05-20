@@ -104,6 +104,12 @@ class ExecContext : public gem5::ExecContext
         inst->setMemAccPredicate(readMemAccPredicate());
     }
 
+    BaseCPU &
+    getCPU() override
+    {
+        return cpu;
+    }
+
     Fault
     initiateMemRead(Addr addr, unsigned int size,
                     Request::Flags flags,

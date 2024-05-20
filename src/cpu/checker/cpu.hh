@@ -94,6 +94,12 @@ class CheckerCPU : public BaseCPU, public ExecContext
     CheckerCPU(const Params &p);
     virtual ~CheckerCPU();
 
+    BaseCPU &
+    getCPU() override
+    {
+        return *this;
+    }
+
     void setSystem(System *system);
 
     void setIcachePort(RequestPort *icache_port);

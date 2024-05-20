@@ -129,6 +129,8 @@ class DynInst : public ExecContext, public RefCounted
     /** Pointer to the Impl's CPU object. */
     CPU *cpu = nullptr;
 
+    BaseCPU &getCPU() override { return *getCpuPtr(); }
+
     BaseCPU *getCpuPtr() { return cpu; }
 
     /** Pointer to the thread state. */

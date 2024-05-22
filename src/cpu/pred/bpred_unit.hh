@@ -128,6 +128,10 @@ class BPredUnit : public SimObject
     void squash(const InstSeqNum &squashed_sn, const PCStateBase &corr_target,
                 bool actually_taken, ThreadID tid, bool from_commit=true);
 
+    // Whisper needs to be able to directly access interface functions for
+    // delegation
+    friend class WhisperBP;
+
   protected:
 
     /** *******************************************************

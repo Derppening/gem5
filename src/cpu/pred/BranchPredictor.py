@@ -1041,3 +1041,14 @@ class MultiperspectivePerceptronTAGE8KB(MultiperspectivePerceptronTAGE):
     tage = MPP_TAGE_8KB()
     loop_predictor = MPP_LoopPredictor_8KB()
     statistical_corrector = MPP_StatisticalCorrector_8KB()
+
+
+class WhisperBP(BranchPredictor):
+    type = "WhisperBP"
+    cxx_class = "gem5::branch_prediction::WhisperBP"
+    cxx_header = "cpu/pred/whisper.hh"
+
+    hint_buffer_size = Param.Unsigned(32, "Size of hint buffer")
+    fallback_predictor = Param.BranchPredictor(
+        TAGE_SC_L_64KB(), "Fallback branch predictor"
+    )

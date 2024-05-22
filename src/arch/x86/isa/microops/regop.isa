@@ -1715,7 +1715,16 @@ let {{
         operand_types = (FoldedSrc1Op, Imm64Op,)
 
         code = '''
-            uint32_t brhint_data = imm64 & mask(dataSize * 8);
-            (void) brhint_data;
+            {
+                using namespace gem5::branch_prediction;
+
+                auto *whisperBP =
+                    dynamic_cast<WhisperBP *>(xc->getCPU().getBPredUnit());
+                if (whisperBP != nullptr)
+                {
+                    uint32_t brhintData = imm64 & mask(dataSize * 8);
+                    whisperBP->insert(SrcReg1, brhintData);
+                }
+            }
         '''
 }};

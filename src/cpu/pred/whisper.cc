@@ -1,5 +1,7 @@
 #include "cpu/pred/whisper.hh"
 
+#include "debug/Whisper.hh"
+
 namespace gem5::branch_prediction
 {
 
@@ -9,7 +11,9 @@ WhisperBP::WhisperBP(const WhisperBPParams &params)
       hintBuffer{},
       globalHistory{},
       fallbackPredictor{params.fallback_predictor}
-{}
+{
+    DPRINTF(Whisper, "Using Whisper branch predictor\n");
+}
 
 void WhisperBP::updateHistories(ThreadID tid, Addr pc, bool uncond,
                                 bool taken, Addr target,
@@ -36,15 +40,17 @@ bool WhisperBP::lookup(ThreadID tid, Addr pc, void *&bp_history) {
         switch (hint.bias)
         {
           case 0b00:
+            DPRINTF(Whisper, "pc: %#0.10x -> Bias: 00\n", pc);
             return false;
           case 0b11:
+            DPRINTF(Whisper, "pc: %#0.10x -> Bias: 11\n", pc);
             return true;
           default:
             break;
         }
 
         // TODO
-        return false;
+        DPRINTF(Whisper, "pc: %#0.10x -> Not Implemented\n", pc);
     }
 
     return fallbackPredictor->lookup(tid, pc, bp_history);
@@ -81,7 +87,21 @@ void WhisperBP::insert(Addr pc, uint32_t hint)
         hintBuffer.pop_front();
     }
 
-    hintBuffer.emplace_back(HintBufferEntry{pc + (hint & mask(12)), hint});
+    auto hint_obj = Hint::fromUInt(hint);
+    auto brPC = pc + hint_obj.pc_offset;
+    hintBuffer.emplace_back(HintBufferEntry{brPC, hint});
+
+    DPRINTF(Whisper,
+            "Inserted entry {"
+            "pc: %#0.10x, hint: %#0.10x "
+            "{hist: %#0.3x, bool_formula: %#0.6x, bias: %#0.3x, pc: %#0.5x}"
+            "}\n",
+            brPC,
+            hint,
+            hint_obj.history,
+            hint_obj.bool_formula,
+            hint_obj.bias,
+            hint_obj.pc_offset);
 }
 
 WhisperBP::Hint WhisperBP::Hint::fromUInt(uint32_t hint)

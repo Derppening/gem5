@@ -14,8 +14,20 @@ void WhisperBP::updateHistories(ThreadID tid, Addr pc, bool uncond,
                                 bool taken, Addr target,
                                 void *&bp_history)
 {
-    fallbackPredictor->updateHistories(tid, pc, uncond, taken, target,
-                                       bp_history);
+    // Whisper does not handle unconditional branches
+    if (uncond)
+    {
+        fallbackPredictor->updateHistories(tid, pc, uncond, taken, target,
+                                           bp_history);
+        return;
+    }
+
+    auto hint_it = lookupBuffer(pc);
+    if (hint_it == hintBuffer.end())
+    {
+        fallbackPredictor->updateHistories(tid, pc, uncond, taken, target,
+                                           bp_history);
+    }
 }
 
 bool WhisperBP::lookup(ThreadID tid, Addr pc, void *&bp_history) {

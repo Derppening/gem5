@@ -1,7 +1,9 @@
 #ifndef __CPU_PRED_WHISPER_HH__
 #define __CPU_PRED_WHISPER_HH__
 
+#include <bitset>
 #include <list>
+#include <map>
 
 #include "base/types.hh"
 #include "cpu/pred/bpred_unit.hh"
@@ -55,6 +57,14 @@ class WhisperBP : public BPredUnit
      */
     void markUsed(std::list<HintBufferEntry>::const_iterator it);
 
+    /**
+     * Updates the global history for this thread.
+     *
+     * @param tid Thread ID.
+     * @param taken Whether the branch is taken.
+     */
+    void updateGlobalHistory(ThreadID tid, bool taken);
+
     unsigned hintBufferSize;
 
     /**
@@ -62,6 +72,7 @@ class WhisperBP : public BPredUnit
      * entry at the back).
      */
     std::list<HintBufferEntry> hintBuffer;
+    std::map<ThreadID, std::bitset<1024>> globalHistory;
     BPredUnit *fallbackPredictor;
 };
 

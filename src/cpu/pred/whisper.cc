@@ -7,6 +7,7 @@ WhisperBP::WhisperBP(const WhisperBPParams &params)
     : BPredUnit(params),
       hintBufferSize{params.hint_buffer_size},
       hintBuffer{},
+      globalHistory{},
       fallbackPredictor{params.fallback_predictor}
 {}
 
@@ -14,13 +15,7 @@ void WhisperBP::updateHistories(ThreadID tid, Addr pc, bool uncond,
                                 bool taken, Addr target,
                                 void *&bp_history)
 {
-    // Whisper does not handle unconditional branches
-    if (uncond)
-    {
-        fallbackPredictor->updateHistories(tid, pc, uncond, taken, target,
-                                           bp_history);
-        return;
-    }
+    updateGlobalHistory(tid, taken);
 
     auto hint_it = lookupBuffer(pc);
     if (hint_it == hintBuffer.end())
@@ -57,6 +52,12 @@ void WhisperBP::update(ThreadID tid, Addr pc, bool taken,
 
 void WhisperBP::squash(ThreadID tid, void *&bp_history)
 {
+    // We do not require a custom branch prediction history object. Rather, we
+    // rely on thread-local global history.
+    if (bp_history != nullptr)
+    {
+        fallbackPredictor->squash(tid, bp_history);
+    }
 }
 
 void WhisperBP::insert(Addr pc, uint32_t hint)
@@ -90,6 +91,16 @@ void WhisperBP::markUsed(std::list<HintBufferEntry>::const_iterator it)
 
     hintBuffer.emplace_back(*it);
     hintBuffer.erase(it);
+}
+
+void WhisperBP::updateGlobalHistory(gem5::ThreadID tid, bool taken)
+{
+    if (globalHistory.find(tid) == globalHistory.cend())
+    {
+        globalHistory[tid] = std::bitset<1024>{};
+    }
+
+    globalHistory[tid] = (globalHistory[tid] << 1) | std::bitset<1024>(taken);
 }
 
 }  // namespace gem5::branch_prediction

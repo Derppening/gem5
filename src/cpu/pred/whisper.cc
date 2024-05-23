@@ -107,52 +107,36 @@ void WhisperBP::updateHistories(ThreadID tid, Addr pc, bool uncond,
     }
 }
 
-bool WhisperBP::lookup(ThreadID tid, Addr pc, void *&bp_history) {
-    auto hint_it = lookupBuffer(pc);
-    markUsed(hint_it);
-    if (hint_it != hintBuffer.end())
+bool WhisperBP::lookup(ThreadID tid, Addr pc, void *&bp_history)
+{
+    auto hint_pred = predict(tid, pc, true);
+
+    if (hint_pred)
     {
-        Hint hint = Hint::fromUInt(hint_it->hint);
-
-        // Check bias first - 00 = NT, 11 = T
-        switch (hint.bias)
-        {
-          case 0b00:
-            DPRINTF(Whisper, "pc: %#0.10x -> NT (Bias=00)\n", pc);
-            return false;
-          case 0b11:
-            DPRINTF(Whisper, "pc: %#0.10x -> T (Bias=11)\n", pc);
-            return true;
-          default:
-            break;
-        }
-
-        // If history length == 8, we can at least try
-        if (hint.histLength() == 8)
-        {
-            std::bitset<1024> bitmask{mask(8)};
-            std::bitset<8> hist{(globalHistory[tid] & bitmask).to_ulong()};
-
-            auto pred = ROMBFUnit(hint.bool_formula_bits(), hist);
-            DPRINTF(Whisper, "pc: %#0.10x -> Prediction: %s (Hist=%#0.3x)\n",
-                    pc, pred ? "T" : "NT", hist.to_ulong());
-            return pred;
-        }
-
-        // TODO
-        DPRINTF(Whisper, "pc: %#0.10x -> Not Implemented (HistLen=%u)\n",
-                pc, hint.histLength());
+        return *hint_pred;
     }
-
-    return fallbackPredictor->lookup(tid, pc, bp_history);
+    else
+    {
+        return fallbackPredictor->lookup(tid, pc, bp_history);
+    }
 }
 
 void WhisperBP::update(ThreadID tid, Addr pc, bool taken,
                        void *&bp_history, bool squashed,
                        const StaticInstPtr &inst, Addr target)
 {
-    auto hint_it = lookupBuffer(pc);
+    if (!squashed)
+    {
+        auto hint_pred = predict(tid, pc, false);
+        if (hint_pred)
+        {
+            DPRINTF(Whisper, "pc: %#0.10x -> Predicted: %s/Taken: %s [%s]\n",
+                  pc, *hint_pred, taken,
+                  (*hint_pred == taken) ? "GOOD" : "BAD");
+        }
+    }
 
+    auto hint_it = lookupBuffer(pc);
     if (hint_it == hintBuffer.end())
     {
         fallbackPredictor->update(tid, pc, taken, bp_history, squashed, inst,
@@ -269,11 +253,66 @@ unsigned WhisperBP::Hint::histLength() const
     return 0;
 }
 
-std::list<WhisperBP::HintBufferEntry>::iterator
-WhisperBP::lookupBuffer(Addr pc)
+std::optional<bool>
+WhisperBP::predict(ThreadID tid, Addr pc, bool dprinf_pred)
 {
-    return std::find_if(hintBuffer.begin(),
-                      hintBuffer.end(),
+    auto hint_it = lookupBuffer(pc);
+    markUsed(hint_it);
+    if (hint_it != hintBuffer.end())
+    {
+        Hint hint = Hint::fromUInt(hint_it->hint);
+
+        // Check bias first - 00 = NT, 11 = T
+        switch (hint.bias)
+        {
+          case 0b00:
+            if (dprinf_pred)
+            {
+                DPRINTF(Whisper, "pc: %#0.10x -> NT (Bias=00)\n", pc);
+            }
+            return std::make_optional(false);
+          case 0b11:
+            if (dprinf_pred)
+            {
+                DPRINTF(Whisper, "pc: %#0.10x -> T (Bias=11)\n", pc);
+            }
+            return std::make_optional(true);
+          default:
+            break;
+        }
+
+        // If history length == 8, we can at least try
+        if (hint.histLength() == 8)
+        {
+            std::bitset<1024> bitmask{mask(8)};
+            std::bitset<8> hist{(globalHistory[tid] & bitmask).to_ulong()};
+
+            auto pred = ROMBFUnit(hint.bool_formula_bits(), hist);
+            if (dprinf_pred)
+            {
+                DPRINTF(Whisper,
+                        "pc: %#0.10x -> Prediction: %s (Hist=%#0.4x)\n", pc,
+                        pred ? "T" : "NT", hist.to_ulong());
+            }
+            return std::make_optional(pred);
+        }
+
+        // TODO
+        if (dprinf_pred)
+        {
+            DPRINTF(Whisper, "pc: %#0.10x -> Not Implemented (HistLen=%u)\n",
+                    pc, hint.histLength());
+        }
+    }
+
+    return std::nullopt;
+}
+
+std::list<WhisperBP::HintBufferEntry>::const_iterator
+WhisperBP::lookupBuffer(Addr pc) const
+{
+    return std::find_if(hintBuffer.cbegin(),
+                      hintBuffer.cend(),
                       [pc](const auto &hint_entry)
                       {
                           return pc == hint_entry.addr;

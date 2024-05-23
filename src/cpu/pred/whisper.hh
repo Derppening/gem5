@@ -4,6 +4,7 @@
 #include <bitset>
 #include <list>
 #include <map>
+#include <optional>
 
 #include "base/types.hh"
 #include "cpu/pred/bpred_unit.hh"
@@ -66,12 +67,23 @@ class WhisperBP : public BPredUnit
     };
 
     /**
+     * Predicts whether the given branch is taken only using the hint buffer
+     * based on the given thread and PC.
+     *
+     * @param dprinf_pred Whether to print debug messages.
+     * @return A \c std::optional containing the prediction result, or
+     * \c std::nullopt if either the hint buffer does not contain an entry or
+     * the operation is not implemented.
+     */
+    std::optional<bool> predict(ThreadID tid, Addr pc, bool dprinf_pred);
+
+    /**
      * Looks up whether the hint buffer contains an entry with the given PC.
      *
      * @param pc Program Counter value of branch.
      * @return An iterator to the \c HintBufferEntry if found.
      */
-    std::list<HintBufferEntry>::iterator lookupBuffer(Addr pc);
+    std::list<HintBufferEntry>::const_iterator lookupBuffer(Addr pc) const;
 
     /**
      * Marks the entry pointed by \c it as used.

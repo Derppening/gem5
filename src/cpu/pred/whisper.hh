@@ -54,6 +54,11 @@ class WhisperBP : public BPredUnit
          */
         static Hint fromUInt(uint32_t hint);
 
+        [[nodiscard]] std::bitset<4> history_bits() const;
+        [[nodiscard]] std::bitset<15> bool_formula_bits() const;
+        [[nodiscard]] std::bitset<2> bias_bits() const;
+        [[nodiscard]] std::bitset<12> pc_offset_bits() const;
+
         /**
          * @return The branch history length encoded by this \c Hint.
          */

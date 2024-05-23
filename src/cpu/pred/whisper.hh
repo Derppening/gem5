@@ -42,6 +42,24 @@ class WhisperBP : public BPredUnit
         }
     };
 
+    struct Hint
+    {
+        uint8_t history : 4;
+        uint16_t bool_formula : 15;
+        uint8_t bias : 2;
+        uint16_t pc_offset : 12;
+
+        /**
+         * Constructs a \c Hint object from a 32-bit hint integer.
+         */
+        static Hint fromUInt(uint32_t hint);
+
+        /**
+         * @return The branch history length encoded by this \c Hint.
+         */
+        [[nodiscard]] unsigned histLength() const;
+    };
+
     /**
      * Looks up whether the hint buffer contains an entry with the given PC.
      *

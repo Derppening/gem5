@@ -30,6 +30,19 @@ bool WhisperBP::lookup(ThreadID tid, Addr pc, void *&bp_history) {
     markUsed(hint_it);
     if (hint_it != hintBuffer.end())
     {
+        Hint hint = Hint::fromUInt(hint_it->hint);
+
+        // Check bias first - 00 = NT, 11 = T
+        switch (hint.bias)
+        {
+          case 0b00:
+            return false;
+          case 0b11:
+            return true;
+          default:
+            break;
+        }
+
         // TODO
         return false;
     }
@@ -69,6 +82,60 @@ void WhisperBP::insert(Addr pc, uint32_t hint)
     }
 
     hintBuffer.emplace_back(HintBufferEntry{pc + (hint & mask(12)), hint});
+}
+
+WhisperBP::Hint WhisperBP::Hint::fromUInt(uint32_t hint)
+{
+    return WhisperBP::Hint{
+        static_cast<uint8_t>((hint >> 28) & mask(4)),
+        static_cast<uint16_t>((hint >> 14) & mask(15)),
+        static_cast<uint8_t>((hint >> 12) & mask(2)),
+        static_cast<uint16_t>(hint & mask(12)),
+    };
+}
+
+unsigned WhisperBP::Hint::histLength() const
+{
+    // Geometric Series: 8 * 1.3819 ^ hist
+    switch (history)
+    {
+      case 0:
+        return 8;
+      case 1:
+        return 11;
+      case 2:
+        return 15;
+      case 3:
+        return 21;
+      case 4:
+        return 29;
+      case 5:
+        return 40;
+      case 6:
+        return 56;
+      case 7:
+        return 77;
+      case 8:
+        return 106;
+      case 9:
+        return 147;
+      case 10:
+        return 203;
+      case 11:
+        return 281;
+      case 12:
+        return 388;
+      case 13:
+        return 536;
+      case 14:
+        return 741;
+      case 15:
+        return 1024;
+      default:
+        assert(false);
+    }
+
+    return 0;
 }
 
 std::list<WhisperBP::HintBufferEntry>::iterator

@@ -97,7 +97,11 @@ void WhisperBP::updateHistories(ThreadID tid, Addr pc, bool uncond,
                                 bool taken, Addr target,
                                 void *&bp_history)
 {
-    updateGlobalHistory(tid, taken);
+    // Only update global history on conditional branches
+    if (!uncond)
+    {
+        updateGlobalHistory(tid, taken);
+    }
 
     auto hint_it = lookupBuffer(pc);
     if (hint_it == hintBuffer.end())
